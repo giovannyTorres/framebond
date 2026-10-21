@@ -21,13 +21,14 @@ fit in four API calls after creating the frames.
 
 ## Install
 
-Python 3.11+ and Pandas 2.2+ are required. Until the initial PyPI release has
-been verified, install from a checkout:
+Python 3.11+ and Pandas 2.2+ are required. Version
+[0.1.0 is published on PyPI](https://pypi.org/project/framebond/0.1.0/), with
+installation from the public index verified in a fresh environment.
 
 ```bash
-python -m pip install .
-# After the first verified PyPI release:
 python -m pip install framebond
+# Reproduce the verified release:
+python -m pip install "framebond==0.1.0"
 ```
 
 No runtime service, telemetry, database or sibling-project dependency is used.
