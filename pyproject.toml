@@ -1,0 +1,76 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "framebond"
+version = "0.1.0"
+description = "Validate primary keys, references and relationship integrity across pandas DataFrames"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "giovannyTorres"}]
+keywords = ["pandas", "data-quality", "dataframes", "data-analysis"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
+]
+dependencies = ["pandas>=2.2,<4"]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8", "hypothesis>=6", "pytest-cov>=6", "ruff>=0.11",
+  "mypy>=1.15", "pandas-stubs>=2.2", "build>=1.2", "twine>=6",
+]
+
+[project.urls]
+Homepage = "https://github.com/giovannyTorres/framebond"
+Documentation = "https://github.com/giovannyTorres/framebond#readme"
+Repository = "https://github.com/giovannyTorres/framebond"
+Issues = "https://github.com/giovannyTorres/framebond/issues"
+Changelog = "https://github.com/giovannyTorres/framebond/blob/main/CHANGELOG.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/framebond"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "examples", "benchmarks", "scripts", ".github", "*.md", "LICENSE", "pyproject.toml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["framebond"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 95
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src"]
+check_untyped_defs = true
+disallow_untyped_defs = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["openpyxl.*", "matplotlib.*"]
+ignore_missing_imports = true

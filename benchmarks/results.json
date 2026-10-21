@@ -1,0 +1,42 @@
+{
+  "python": "3.13.5",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "pandas": "3.0.6",
+  "parent_rows": 50000,
+  "child_rows": 100000,
+  "repeats": 5,
+  "validated_counts": {
+    "parent_pk_valid": true,
+    "child_pk_valid": true,
+    "orphan_rows": 9990,
+    "missing_keys": 9990,
+    "null_rows": 101
+  },
+  "manual_pandas": {
+    "seconds": [
+      0.018423299999994924,
+      0.011739900000065973,
+      0.015957300000081887,
+      0.020179400000415626,
+      0.021468399999321264
+    ],
+    "median_seconds": 0.018423299999994924,
+    "min_seconds": 0.011739900000065973,
+    "max_seconds": 0.021468399999321264,
+    "traced_peak_bytes": 3659124
+  },
+  "framebond": {
+    "seconds": [
+      0.7151586999998472,
+      1.2995047999993403,
+      0.8242503000001307,
+      0.6275507999998808,
+      0.6112366000006659
+    ],
+    "median_seconds": 0.7151586999998472,
+    "min_seconds": 0.6112366000006659,
+    "max_seconds": 1.2995047999993403,
+    "traced_peak_bytes": 56987063
+  },
+  "notes": "Same primary-key validity and foreign-key counts checked before timing. Library includes registration snapshots, reusable exact-key indexes and original-position issues. Timing without tracemalloc; memory separately measured traced Python allocations, not RSS."
+}
