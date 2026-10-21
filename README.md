@@ -21,14 +21,13 @@ fit in four API calls after creating the frames.
 
 ## Install
 
-Python 3.11+ and Pandas 2.2+ are required. Version
-[0.1.0 is published on PyPI](https://pypi.org/project/framebond/0.1.0/), with
-installation from the public index verified in a fresh environment.
+Python 3.11+ and Pandas 2.2+ are required. See [RELEASE.md](RELEASE.md)
+for publication and installation verification.
 
 ```bash
 python -m pip install framebond
-# Reproduce the verified release:
-python -m pip install "framebond==0.1.0"
+# Pin the version for reproducibility:
+python -m pip install "framebond==0.2.0"
 ```
 
 No runtime service, telemetry, database or sibling-project dependency is used.
@@ -100,8 +99,16 @@ copies; `duplicate_keys` counts distinct duplicated nonnull keys. Null rows are
 counted separately. An undeclared PK has `primary_key_valid=None` and zero PK
 issue counts, rather than an inferred constraint.
 
-Matching uses original scalar tuples and Python hash/equality. Numeric 1 and
-1.0 match; string `"1"` is distinct. Types are never normalized or silently cast.
+Matching uses original scalar equality, with **booleans distinct from numbers**:
+`True` never references `1`, and `False` never references `0`. Numeric `1` and
+`1.0` still match; string `"1"` is distinct. Types are never silently cast.
+Timezone-aware timestamps representing the same instant match across timezones;
+timezone-aware and naive timestamps remain distinct. Incompatible orphan types
+are described in `RelationResult.type_mismatches`, `report.explain()` and
+`foreign_key_type_mismatch` issues, including string/number and aware/naive
+datetime mismatches. Nulls do not imply a type mismatch, and an empty nonnull
+parent key set supplies no type evidence. These diagnostics describe observed
+scalar families rather than requiring identical pandas dtypes.
 Containers used as key values are rejected; composite keys belong in multiple
 explicit columns. Object-backed adjacent large integers retain identity even
 beside nulls. Precision already lost while constructing a DataFrame cannot be
@@ -121,6 +128,7 @@ They can be used to retrieve source records with `.iloc`.
 | `primary_key_null` | Declared PK has a null component |
 | `primary_key_duplicate` | Nonnull declared PK repeats |
 | `foreign_key_orphan` | Nonnull child key is absent from target |
+| `foreign_key_type_mismatch` | Orphan has a component type absent from the nonnull target keys |
 | `foreign_key_target_duplicate` | Nonnull target key repeats |
 | `foreign_key_null` | Child has any null component under `forbid` |
 | `relation_child_duplicate` | Nonnull child key repeats under `one_to_one` |
@@ -128,6 +136,8 @@ They can be used to retrieve source records with `.iloc`.
 `RelationResult.orphan_rows` includes every orphan record; `missing_keys` counts
 distinct absent nonnull keys. Counts differ when an absent reference repeats.
 Use `report.issues(code="foreign_key_orphan")` to inspect those native values.
+Type-mismatch issues are a subset of orphan rows and do not increase
+`orphan_rows` or `missing_keys`; a row can appear under both issue codes.
 
 `to_dict()` returns JSON-compatible structures. Integers retain their exact
 numeric values, missing values become null, dates/times use ISO strings and
@@ -147,14 +157,18 @@ and membership primitives. framebond focuses on a small direct-DataFrame API,
 exact source keys and positional issue inspection. See [RESEARCH.md](RESEARCH.md)
 for comparisons, evidence and upstream licenses.
 
-Version 0.1.0 supports in-memory Pandas snapshots. It does not implement an ORM,
+Version 0.2.0 supports in-memory Pandas snapshots. It does not implement an ORM,
 migrations, SQL execution, cascading changes, type coercion, generic graph-link
 constraints or automatic key discovery. Snapshot/index storage is proportional
 to input rows and key width; issue storage can also be large when many rows
 fail. Full issue JSON can be expensive. The small `KeyBackend` protocol isolates
 original key extraction/indexing for future adapters; the implemented backend
-is Pandas only. Its equality/null policies must be revisited explicitly for
-other backends.
+is Pandas only. `KeyIndex.keys` preserves original source tuples. Boolean
+components in its lower-level `positions` mapping use internal matching tokens;
+use `KeyIndex.positions_for(original_key)` for scalar-equality lookup. Custom
+backend boolean components are normalized from their original row keys at the
+model boundary so the same boolean/number policy applies; other adapter-provided
+matching components retain their equality policy.
 
 ## Validation and benchmark
 
@@ -177,6 +191,6 @@ and records five timed samples after warmup plus separate traced memory.
 document the extra cost of snapshots, reusable indexes and native issues.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Original code is MIT licensed with credit
-to upstream inspiration and no affiliation claim. Proposed 0.2.0 priorities:
+to upstream inspiration and no affiliation claim. Future priorities:
 bounded issue samples, explicit expected dtype policies, incremental validation
 and a separately verified alternate backend.

@@ -1,6 +1,7 @@
 # Release procedure and publication state
 
-Current version: **0.1.0**. **PyPI: PUBLISHED** at
+Current source version: **0.2.0** (prepared for publication).
+Previous verified PyPI release: **0.1.0**, published at
 [framebond 0.1.0](https://pypi.org/project/framebond/0.1.0/).
 Installation from the public index was verified in a fresh environment, including
 `pip check`, both executable examples, wheel hash and installed source identity.

@@ -1,4 +1,23 @@
-# Local validation record — framebond 0.1.0
+# Local validation record — framebond 0.2.0
+
+Recorded 2026-10-21 (UTC) on Linux, Python 3.12.14. These are local
+checks, separate from GitHub CI and public PyPI installation.
+
+- 66 tests passed with both pandas 3.0.6 and pandas 2.2.3, including the
+  Hypothesis suites; statement coverage was 100% (290/290 statements).
+- Ruff lint/format and mypy passed. Wheel/sdist builds and Twine checks passed;
+  both artifacts installed independently in clean virtual environments and ran
+  the shipped examples with isolated imports.
+- New regressions cover bool/number PK and FK separation, mixed/composite
+  identifiers, string/number and aware/naive datetime diagnostics, nulls,
+  original issue values, manually constructed KeyIndex lookups and custom
+  adapters preserving nonboolean matching components.
+- The existing 100,000-child/50,000-parent benchmark validated the same counts
+  with pandas 3.0.6: 9,990 orphan rows/keys and 101 ignored nulls. Three timed
+  samples gave a 0.707 s library median and 0.00859 s manual pandas median;
+  these operations have different scopes, as documented below.
+
+## Historical 0.1.0 validation
 
 Recorded from completed local checks on 2026-10-21 (UTC).
 These results are separate from GitHub CI and from public PyPI installation.

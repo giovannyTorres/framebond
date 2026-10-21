@@ -38,8 +38,10 @@ validates 100,000 child rows and compares an explicit manual Pandas recipe.
 
 Scalar key tuples are indexed directly from original cells. No inferred group
 index, string normalization or numeric cast is used. Matching follows Python
-hash/equality on nonnull scalar tuples: numeric 1 and 1.0 agree, string "1"
-does not. Any-null parent keys are excluded from membership. Any-null child
+hash/equality on nonnull scalar tuples, with booleans kept distinct from numbers:
+numeric 1 and 1.0 agree, while True and string "1" do not reference 1.
+Incompatible orphan component types are reported explicitly without coercion.
+Any-null parent keys are excluded from membership. Any-null child
 keys are ignored by default (SQL MATCH SIMPLE style) or rejected explicitly.
 Target nonnull keys must be unique even if no primary key was declared.
 Null parent rows are independently invalid if they belong to a declared PK.

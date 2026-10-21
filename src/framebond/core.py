@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
-from numbers import Integral, Real
+from numbers import Integral, Number, Real
 from typing import Any, Literal, Protocol
 from uuid import UUID
 
@@ -44,12 +44,57 @@ def _columns(frame: pd.DataFrame, columns: Columns) -> tuple[str, ...]:
 
 
 @dataclass(frozen=True)
+class _BooleanKey:
+    """Keep Python's bool/int equality from collapsing distinct identifiers."""
+
+    value: bool
+
+
+def _matching_key(key: tuple[Any, ...]) -> tuple[Any, ...]:
+    return tuple(
+        _BooleanKey(bool(value)) if pd.api.types.is_bool(value) else value for value in key
+    )
+
+
+def _key_family(value: Any) -> str:
+    """Describe matching compatibility without coercing source scalar values."""
+    if pd.api.types.is_bool(value):
+        return "boolean"
+    if isinstance(value, datetime):
+        return "datetime-aware" if value.utcoffset() is not None else "datetime-naive"
+    if type(value).__module__.startswith("numpy"):
+        if type(value).__name__ == "datetime64":
+            return "datetime-naive"
+        if type(value).__name__ == "timedelta64":
+            return "timedelta"
+    if isinstance(value, timedelta):
+        return "timedelta"
+    if isinstance(value, Number):
+        return "number"
+    if isinstance(value, str):
+        return "string"
+    return f"{type(value).__module__}.{type(value).__qualname__}"
+
+
+@dataclass(frozen=True)
 class KeyIndex:
-    """Backend-neutral original keys, null positions and nonnull key positions."""
+    """Original keys, null positions and type-aware nonnull matching positions.
+
+    Boolean components in ``positions`` use internal matching tokens to remain
+    distinct from numbers. Use ``positions_for`` to look up an original key.
+    """
 
     keys: tuple[tuple[Any, ...], ...]
     null_positions: tuple[int, ...]
     positions: dict[tuple[Any, ...], tuple[int, ...]]
+
+    def positions_for(self, key: tuple[Any, ...]) -> tuple[int, ...]:
+        """Look up nonnull source positions using the original scalar key tuple."""
+        matching_key = _matching_key(key)
+        # A public KeyIndex can also be constructed by an adapter using raw
+        # tuple keys. Filter that bucket to separate collapsed boolean/numbers.
+        positions = self.positions.get(matching_key, self.positions.get(key, ()))
+        return tuple(pos for pos in positions if _matching_key(self.keys[pos]) == matching_key)
 
     @property
     def duplicate_positions(self) -> tuple[int, ...]:
@@ -78,7 +123,7 @@ class KeyBackend(Protocol):
 
 
 class PandasBackend:
-    """Original scalar tuple equality, with any scalar null excluded from matching."""
+    """Scalar equality with boolean/number separation and any-null exclusion."""
 
     def index(self, frame: pd.DataFrame, columns: tuple[str, ...]) -> KeyIndex:
         keys = tuple(frame.loc[:, list(columns)].itertuples(index=False, name=None))
@@ -91,7 +136,7 @@ class PandasBackend:
                 nulls.append(pos)
                 continue
             try:
-                positions.setdefault(key, []).append(pos)
+                positions.setdefault(_matching_key(key), []).append(pos)
             except TypeError as exc:
                 raise ModelError(f"Unhashable key at row position {pos}") from exc
         return KeyIndex(keys, tuple(nulls), {key: tuple(rows) for key, rows in positions.items()})
@@ -105,7 +150,27 @@ class _Table:
 
     def index(self, columns: tuple[str, ...], backend: KeyBackend) -> KeyIndex:
         if columns not in self.indexes:
-            self.indexes[columns] = backend.index(self.frame, columns)
+            index = backend.index(self.frame, columns)
+            if type(backend) is not PandasBackend:
+                # Adapters may group True and 1 using ordinary tuple equality.
+                # Split boolean components from numbers at the boundary while
+                # preserving the adapter's matching keys for other components.
+                positions: dict[tuple[Any, ...], list[int]] = {}
+                for key, rows in index.positions.items():
+                    for pos in rows:
+                        matching_key = tuple(
+                            _BooleanKey(bool(index.keys[pos][column]))
+                            if pd.api.types.is_bool(index.keys[pos][column])
+                            else value
+                            for column, value in enumerate(key)
+                        )
+                        positions.setdefault(matching_key, []).append(pos)
+                index = KeyIndex(
+                    index.keys,
+                    index.null_positions,
+                    {key: tuple(sorted(rows)) for key, rows in positions.items()},
+                )
+            self.indexes[columns] = index
         return self.indexes[columns]
 
 
@@ -140,6 +205,7 @@ class RelationResult:
     target_duplicate_keys: int
     child_duplicate_keys: int
     valid: bool
+    type_mismatches: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -151,6 +217,43 @@ class _Relation:
     parent_columns: tuple[str, ...]
     nulls: NullPolicy
     relationship: Relationship
+
+
+def _type_mismatches(
+    relation: _Relation,
+    child: KeyIndex,
+    parent: KeyIndex,
+    absent: dict[tuple[Any, ...], tuple[int, ...]],
+) -> tuple[tuple[str, ...], tuple[int, ...]]:
+    """Describe incompatible orphan components; empty parents prove no type mismatch."""
+    if not absent or not parent.positions:
+        return (), ()
+    width = len(relation.child_columns)
+    parent_families: list[set[str]] = [set() for _ in range(width)]
+    missing_families: list[set[str]] = [set() for _ in range(width)]
+    for positions in parent.positions.values():
+        for column, value in enumerate(parent.keys[positions[0]]):
+            parent_families[column].add(_key_family(value))
+    incompatible_positions: list[int] = []
+    for positions in absent.values():
+        incompatible = False
+        for column, value in enumerate(child.keys[positions[0]]):
+            family = _key_family(value)
+            if family not in parent_families[column]:
+                missing_families[column].add(family)
+                incompatible = True
+        if incompatible:
+            incompatible_positions.extend(positions)
+    diagnostics = tuple(
+        f"{relation.child_table}.{relation.child_columns[column]} has "
+        f"{', '.join(sorted(families))} keys absent from "
+        f"{relation.parent_table}.{relation.parent_columns[column]} types "
+        f"({', '.join(sorted(parent_families[column]))}); "
+        "align key types explicitly before registration"
+        for column, families in enumerate(missing_families)
+        if families
+    )
+    return diagnostics, tuple(sorted(incompatible_positions))
 
 
 @dataclass(frozen=True)
@@ -279,6 +382,7 @@ class ValidationReport:
                     f"Relationship: {relation.observed_relationship}; required {relation.relationship}",
                 ]
             )
+            lines.extend(f"Key type mismatch: {message}" for message in relation.type_mismatches)
         return "\n".join(lines)
 
 
@@ -417,8 +521,18 @@ class DataModel:
                 if key not in parent.positions
             }
             orphan_positions = sorted(pos for positions in absent.values() for pos in positions)
+            type_mismatches, incompatible_positions = _type_mismatches(
+                relation, child, parent, absent
+            )
             record(
                 relation.child_table, child, orphan_positions, "foreign_key_orphan", relation.name
+            )
+            record(
+                relation.child_table,
+                child,
+                incompatible_positions,
+                "foreign_key_type_mismatch",
+                relation.name,
             )
             record(
                 relation.parent_table,
@@ -466,6 +580,7 @@ class DataModel:
                     parent.duplicate_keys,
                     child.duplicate_keys,
                     valid,
+                    type_mismatches,
                 )
             )
         return ValidationReport(tuple(tables), tuple(relations), tuple(issues))
