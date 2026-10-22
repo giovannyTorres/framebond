@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-10-22T05:56:18.950586+00:00",
+  "package": "framebond",
+  "versions": {
+    "framebond": "0.2.0",
+    "pandas": "3.0.6",
+    "numpy": "2.5.4"
+  },
+  "python": "3.13.5",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "machine": "AMD64",
+  "processor": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+  "logical_cpus": 16,
+  "base_commit": "0a0041b47831d3f8f5458548740107cba8534f05",
+  "source_sha256_lf": {
+    "benchmarks/reproduce.py": "183ccf8526f1ab6b5701d3d4b86a0d76244f38ba02c4c9be65035c9ab5e54ef2",
+    "benchmarks/benchmark.py": "818b21906e1072e2fc43345e54affbb2db7be414277a45598945d8e13bfc91e0",
+    "examples/comparison.py": "5a641b2b60631ec08dd934a1331c4808574eb343493d9ee03ba6e7cbcb54a2d2",
+    "examples/cookbook.py": "2e16ce1a02cd38a3d4508f207022c8c70fc92a4aae318e364ce7288c2d02aa48"
+  },
+  "command": "python benchmarks/reproduce.py --repeat 5",
+  "quick": false,
+  "repeats": 5,
+  "warmup_per_operation": 2,
+  "memory_repeats": 2,
+  "methodology": {
+    "time": "interleaved rotating order; perf_counter; GC collection before sample outside timer; input construction excluded",
+    "memory": "separate tracemalloc passes, result alive; Python allocation peak, not total RSS; input construction excluded",
+    "accuracy": "differential assertions before timing; comparison and cookbook assertions also executed",
+    "ease_of_use": "physical lines and AST statements in comparison functions, excluding fixtures and imports; a code-size proxy, not a user study",
+    "limitations": "deterministic synthetic workloads; one host; diagnostics differ in scope; no statistical confidence intervals or R execution comparison"
+  },
+  "comparison_code_size": {
+    "baseline": {
+      "physical_lines": 4,
+      "statements": 3
+    },
+    "library": {
+      "physical_lines": 6,
+      "statements": 5
+    }
+  },
+  "workloads": [
+    {
+      "input_size": 1000,
+      "accuracy": {
+        "parent_pk_valid": true,
+        "child_pk_valid": true,
+        "orphan_rows": 100,
+        "missing_keys": 100,
+        "null_rows": 2
+      },
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0010996000000886852,
+            0.0011531999998624087,
+            0.0011230000000068685,
+            0.0011689000002661487,
+            0.0011425000002418528
+          ],
+          "median_seconds": 0.0011425000002418528,
+          "min_seconds": 0.0010996000000886852,
+          "max_seconds": 0.0011689000002661487,
+          "traced_peak_bytes": [
+            52085,
+            50101
+          ],
+          "median_peak_bytes": 51093.0
+        },
+        "framebond": {
+          "seconds": [
+            0.005149599999640486,
+            0.005332299999281531,
+            0.005526899999495072,
+            0.005026100000577571,
+            0.0051098000003548805
+          ],
+          "median_seconds": 0.005149599999640486,
+          "min_seconds": 0.005026100000577571,
+          "max_seconds": 0.005526899999495072,
+          "traced_peak_bytes": [
+            617471,
+            620183
+          ],
+          "median_peak_bytes": 618827.0
+        }
+      }
+    },
+    {
+      "input_size": 10000,
+      "accuracy": {
+        "parent_pk_valid": true,
+        "child_pk_valid": true,
+        "orphan_rows": 999,
+        "missing_keys": 999,
+        "null_rows": 11
+      },
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0019746000007216935,
+            0.002283499999975902,
+            0.0020973000000594766,
+            0.0019311000005473034,
+            0.001782199999979639
+          ],
+          "median_seconds": 0.0019746000007216935,
+          "min_seconds": 0.001782199999979639,
+          "max_seconds": 0.002283499999975902,
+          "traced_peak_bytes": [
+            401669,
+            399685
+          ],
+          "median_peak_bytes": 400677.0
+        },
+        "framebond": {
+          "seconds": [
+            0.04390070000044943,
+            0.04403739999997924,
+            0.040845500000614265,
+            0.040850300000784046,
+            0.041428499999710766
+          ],
+          "median_seconds": 0.041428499999710766,
+          "min_seconds": 0.040845500000614265,
+          "max_seconds": 0.04403739999997924,
+          "traced_peak_bytes": [
+            6508767,
+            6511535
+          ],
+          "median_peak_bytes": 6510151.0
+        }
+      }
+    },
+    {
+      "input_size": 50000,
+      "accuracy": {
+        "parent_pk_valid": true,
+        "child_pk_valid": true,
+        "orphan_rows": 4995,
+        "missing_keys": 4995,
+        "null_rows": 51
+      },
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.004835099999581871,
+            0.006087899999329238,
+            0.004289800000151445,
+            0.005002599999897939,
+            0.004248299999744631
+          ],
+          "median_seconds": 0.004835099999581871,
+          "min_seconds": 0.004248299999744631,
+          "max_seconds": 0.006087899999329238,
+          "traced_peak_bytes": [
+            1837957,
+            1835973
+          ],
+          "median_peak_bytes": 1836965.0
+        },
+        "framebond": {
+          "seconds": [
+            0.2257288000000699,
+            0.2259250000006432,
+            0.2364541000006284,
+            0.23267130000022007,
+            0.24124529999971855
+          ],
+          "median_seconds": 0.23267130000022007,
+          "min_seconds": 0.2257288000000699,
+          "max_seconds": 0.24124529999971855,
+          "traced_peak_bytes": [
+            33509015,
+            33511791
+          ],
+          "median_peak_bytes": 33510403.0
+        }
+      }
+    }
+  ]
+}

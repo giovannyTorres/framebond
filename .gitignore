@@ -18,3 +18,4 @@ build/
 .pypirc
 *.pem
 *.key
+benchmarks/smoke.json

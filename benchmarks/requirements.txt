@@ -1,0 +1,7 @@
+# Recorded runtime; use CPython 3.13.5
+framebond==0.2.0
+pandas==3.0.6
+numpy==2.5.4
+python-dateutil==3.0.0
+six==1.17.0
+tzdata==2026.5
